@@ -10,7 +10,7 @@ from icecream import ic
 from src.segment import by_colors
 from scipy.optimize import minimize
 from src import Camera, geometries
-from src.utils.debug import separator, debug_vis
+from src.utils.debug import debug_separator, debug_vis
 
 
 def cvt_df_values_to_np(df):
@@ -94,7 +94,7 @@ def objective_func_Transform(params, kwargs):
     error = error_R + error_t
     return error
 
-@ separator
+@ debug_separator
 def segment_images(dir_raw, colors, seg_inv=False, delta=50, suffix=".jpg", debug=False):
 
     [dir_parent, _] = os.path.split(dir_raw)
@@ -128,7 +128,7 @@ def segment_images(dir_raw, colors, seg_inv=False, delta=50, suffix=".jpg", debu
     return dirs_color
 
 
-@ separator
+@ debug_separator
 def find_corners_dual(dir_raw, dirs_color, size_chessboard, suffix=".jpg", sub_corner=False, debug=False, dir_debug=None):
     [dir_parent, _] = os.path.split(dir_raw)
     pthes_img = glob.glob(os.path.join(dir_raw, "*"+suffix))
@@ -185,7 +185,7 @@ def find_corners_dual(dir_raw, dirs_color, size_chessboard, suffix=".jpg", sub_c
     return pth_output_json
 
 
-@ separator
+@ debug_separator
 def calibrate_dual(df_pts2d, size_chessboard, size_image, len_chessboard=0.02):
     grid_3d = np.mgrid[0:size_chessboard[0], 0:size_chessboard[1], 0:1] * len_chessboard
     grid_3d = grid_3d.T.reshape((-1, 3))
@@ -246,14 +246,14 @@ def calibrate_dual(df_pts2d, size_chessboard, size_image, len_chessboard=0.02):
     return [K, dist_rvecs, dist_tvecs, Ms_rltv, dist]
 
 
-@ separator
+@ debug_separator
 def load_corners_dual(pth_corners):
     df_corners = pd.read_json(pth_corners).T
     df_corners.fillna(value=np.NaN, inplace=True)
     return df_corners  # (n_imgs*n_colors, w*h chessboard, 2)
 
 
-@ separator
+@ debug_separator
 def save_calib_results(dir_calib_root, K, dict_rvecs, dict_tvecs, Ms_rltv, dist, size_img):
     """
     Save calibration data to: "<dir_calib_root>/data/camera_params.json"
@@ -282,7 +282,7 @@ def save_calib_results(dir_calib_root, K, dict_rvecs, dict_tvecs, Ms_rltv, dist,
     return
 
 
-@ separator
+@ debug_separator
 def load_calib_dual(dir_calib_root):
     """
     Load calibration data from: "<dir_calib_root>/data/camera_params.json"
@@ -298,7 +298,7 @@ def load_calib_dual(dir_calib_root):
     return [K, Ms_rltv, size_img]
 
 
-@ separator
+@ debug_separator
 def evaluate(dir_calib_root, K, dict_rvecs, dict_tvecs, Ms_rltv, len_chessboard, size_img, size_chessboard, dist=np.zeros(5), df_pts2d=None, debug=True, dir_debug=None):
     dir_raw = os.path.join(dir_calib_root, "raw",)
     pthes_raw = glob.glob(os.path.join(dir_raw, "*.jpg",))

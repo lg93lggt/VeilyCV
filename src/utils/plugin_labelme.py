@@ -8,9 +8,9 @@ import glob
 import sys
 
 sys.path.append("../..")
-from src.utils.debug import separator
+from src.utils.debug import debug_separator
 
-@ separator
+@ debug_separator
 def generate_mask(pth_label, color=1, type_output=np.float32):
     with open(pth_label, 'r') as f:
         data = json.load(f)
@@ -22,7 +22,7 @@ def generate_mask(pth_label, color=1, type_output=np.float32):
     # plt.show()
     return mask.astype(type_output)
 
-@ separator
+@ debug_separator
 def generate_masks(dir_label, color=1, type_output=np.float32, key=None, save_mask=False):
     [dir_parent, _] = os.path.split(dir_label)
     dir_mask = os.path.join(dir_parent, "mask")

@@ -1,5 +1,9 @@
 
+from pathlib import Path
+from  icecream import ic
 from numpy.core.records import array
+import pandas as pd
+from torch._C import dtype
 from src import geometries
 from src.visualizer import draw_axes3d, to_plot
 import numpy as np
@@ -23,6 +27,10 @@ except:
 class Intrinsic(object):
     def __init__(self, mat=np.eye(3)):
         self.set_matrix(mat[:3, :3])
+        return
+
+    def info(self) -> None:
+        ic(self.__mat)
         return
 
     def set_params(self, fx, fy, cx, cy, skew=0):
@@ -83,6 +91,10 @@ class Extrinsic(object):
         self.set_matrix(mat[:3])
         return
 
+    def info(self) -> None:
+        ic(self.__mat)
+        return
+
     def set_matrix(self, mat):
         self.__mat = mat[:3]
         return
@@ -140,12 +152,12 @@ class Extrinsic(object):
         return c
 
     def _mat_inv(self):
-        [R, T] = decompose_transform_matrix(self._mat_4x4())
+        [R, T] = decompose_transform_matrix_to_RTmat(self._mat_4x4())
         M2 = R.T @ np.linalg.inv(T)
         return M2[:3]
 
     def _mat_inv_4x4(self):
-        [R, T] = decompose_transform_matrix(self._mat_4x4())
+        [R, T] = decompose_transform_matrix_to_RTmat(self._mat_4x4())
         M2 = R.T @ np.linalg.inv(T)
         return M2
         
@@ -160,11 +172,31 @@ class IdealCamera(GeometricShape.GeometricShape):
 
         self.height = height
         self.width = width
-        self.image_size = (height, width)
+        self.size_image = (height, width)
         self.intrinsic = Intrinsic(K)
         self.extrinsic = Extrinsic()
 
         self.visualize_default_settings()
+        return
+
+    def info(self) -> None:
+        ic(self.intrinsic._mat_3x3())
+        ic(self.extrinsic._mat_3x4())
+        ic(self.size_image)
+        return
+
+    def _projection_matrix_4x4(self):
+        P = self.intrinsic._mat_4x4() @ self.extrinsic._mat_4x4()
+        return P
+
+    def _projection_matrix_3x4(self):
+        P = self.intrinsic._mat() @ self.extrinsic._mat()
+        return P
+
+    def set_projection_matrix(self, P):
+        [K, M] = decompose_projection_mat(P)
+        self.intrinsic.set_matrix(K)
+        self.extrinsic.set_matrix(M)
         return
 
     def set_extrinsic(self, extrinsic):
@@ -179,12 +211,12 @@ class IdealCamera(GeometricShape.GeometricShape):
         self.extrinsic.set_matrix(np.eye(4))
         return
 
-    def set_rtvec(self, rvec=np.zeros(3), tvec=np.zeros(3)):
+    def set_extrinsic_by_rtvec(self, rvec=np.zeros(3), tvec=np.zeros(3)):
         M = rtvec_to_transform_matrix(rvec=rvec, tvec=tvec, shape=(4, 4))
         self.extrinsic.set_matrix(M)
         return
 
-    def set_rcvec(self, rvec=np.zeros(3), cvec=np.zeros(3)):
+    def set_extrinsic_by_rcvec(self, rvec=np.zeros(3), cvec=np.zeros(3)):
         R = geometries.r_to_R(rvec)
         C = geometries.t_to_T(cvec)
         M = R @ C
@@ -300,7 +332,7 @@ class IdealCamera(GeometricShape.GeometricShape):
         return
 
     def project_points(self, points3d):
-        points2d = project_points3d_to_2d(rtvec=np.zeros(6), mat_projection=self._projection_mat_4x4(), points3d=points3d)
+        points2d = project_points3d_to_2d(rtvec=np.zeros(6), mat_projection=self._projection_matrix_4x4(), points3d=points3d)
         return points2d
 
     def project_points_on_image(self, points3d, color=(255, 255, 255), radius=1, thickness=1, img=None) -> np.ndarray:
@@ -375,7 +407,56 @@ class IdealCamera(GeometricShape.GeometricShape):
     def copy(self):
         return copy.deepcopy(self)
 
-    
+    def resize(self, **kwargs: Tuple[Tuple[int], float]) -> None:
+        """---
+        # resize
+        change camera intrinsic according to resize image
+
+        Parameters
+        -------
+        ### - `size`:
+            new image size
+        ### - `scale`: 
+            get new image size by scale, (h2, w2) = (h1, h1) * scale
+            
+        Returns
+        -------
+        [type]
+            [description]
+        """        
+        K = self.intrinsic._mat_4x4()
+        if "scale" in kwargs.keys():
+            scale = kwargs["scale"]
+            s = 1 / scale 
+            if not (self.height % s) == 0 and (self.width % s == 0):
+                Warning("s value is unsupported.")
+                return
+            else:
+                self.height = int(self.height / s)
+                self.width  = int(self.width  / s)
+                self.size_image = (self.height, self.width)
+        elif "size" in kwargs.keys():
+            size_new = kwargs["size"]
+            if  (self.height / size_new[0] == self.height / size_new[0]) \
+                and (self.width  % size_new[1] == 0) \
+                and (self.height % size_new[0] == 0):
+                    s = self.height / size_new[0]
+                    self.height = int(self.height / s)
+                    self.width  = int(self.width  / s)
+                    self.size_image = (self.height, self.width)
+            else:
+                Warning("new size is unsupported.")
+                return
+
+        K[0, 0] = K[0, 0] / s
+        K[1, 1] = K[1, 1] / s
+        K[0, 2] = K[0, 2] / s - 0.5 / s + 0.5
+        K[1, 2] = K[1, 2] / s - 0.5 / s + 0.5
+        K[2, 2] = 1
+        K[3, 3] = 1
+        self.intrinsic.set_matrix(K)
+        return self.copy()
+
     def get_image_from_camera_axes(self, vis):
         self.view_at_camera_axes(vis, block=False)
         img_o3d = np.array(vis.capture_screen_float_buffer(False)) * 255.0
@@ -389,6 +470,42 @@ class IdealCamera(GeometricShape.GeometricShape):
         img = img_o3d.astype(np.uint8)
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         return img
+    
+    def load_from_file(self, pth_input: Union[Path, str]):
+        pth_input = Path(pth_input) if isinstance(pth_input, str) else pth_input
+        if pth_input.suffix == ".pkl":
+            data_load = pd.read_pickle(pth_input)
+            data_load = data_load[data_load.notna()]
+        else:
+            raise NameError("Unsupported format {}.".format(pth_input.suffix))
+        if   isinstance(data_load, pd.Series):
+            if "intrinsic" in data_load.index:
+                self.intrinsic.set_matrix(data_load.intrinsic.astype(float))
+            if ("rvec" in data_load.index) and ("tvec" in data_load.index):
+                rvec = data_load.height.astype(int)[0]
+                tvec = data_load.height.astype(int)[0]
+                self.set_extrinsic_by_rtvec(rvec=rvec, tvec=tvec)
+            if "height" in data_load.index:
+                self.height = data_load.height.astype(int)[0]
+            if "width" in data_load.index:
+                self.width  = data_load.width.astype(int)[0]
+            self.size_image = (self.height, self.width)
+        elif isinstance(data_load, pd.DataFrame):
+            if ("rvec" in data_load.columns) and ("tvec" in data_load.columns):
+                rvecs = np.asarray(data_load.rvec.to_list(), dtype=float)
+                tvecs = np.asarray(data_load.tvec.to_list(), dtype=float)
+                self.trajectory = geometries.rtvecs_to_transform_matrixes(rvecs=rvecs, tvecs=tvecs)
+                self.names_traj = data_load.index.tolist()
+        return 
+
+    def apply_trajectory_by_index(self, idx: int) -> str:
+        try:
+            traj = self.trajectory
+            self.set_extrinsic_matrix(traj[idx])
+            return self.names_traj[idx]
+        except :
+            print("No traj.")
+            return
 
 
 class PinholeCamera(IdealCamera):
@@ -432,14 +549,6 @@ class PinholeCamera(IdealCamera):
 
         return
 
-
-    def _projection_mat_4x4(self):
-        P = self.intrinsic._mat_4x4() @ self.extrinsic._mat_4x4()
-        return P
-
-    def _projection_mat_3x4(self):
-        P = self.intrinsic._mat() @ self.extrinsic._mat()
-        return P
 
 
 if __name__ == '__main__':

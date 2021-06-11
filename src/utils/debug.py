@@ -6,7 +6,7 @@ from icecream import ic
 import time
 
 
-def separator(func):
+def debug_separator(func):
     def wrapper(*args, **kwargs):
         print("\n"+"*"*64)
         print("{}".format(func.__name__))
@@ -40,12 +40,15 @@ def debug_vis(debug, dir_debug=None, name_img=None, img_out=None):
         pass
     return
 
+
 if __name__ == '__main__':
     import numpy as np
     from matplotlib import pyplot as plt
+
+
     I = cv2.imread("/home/veily3/LIGAN/VeilyCV/test/test_508/test3/00001.jpg")
     M = cv2.imread("/home/veily3/LIGAN/VeilyCV/test/test_508/test3/00001.png", cv2.IMREAD_GRAYSCALE)
-    A = np.loadtxt("/home/veily3/LIGAN/VeilyCV/test/test_508/test3/00001.txt", delimiter=",")
+    A = np.loadtxt("/home/veily3/LIGAN/VeilyCV/test/test_508/test3/00001.txt", delimiter=",") # float
 
     X = cv2.Sobel(A, cv2.CV_64FC1, 1, 0)
     X = np.abs(X)
@@ -79,9 +82,6 @@ if __name__ == '__main__':
     plt.imshow(I)
     plt.show()
 
-    pts = cv2.approxPolyDP(	cnts[idx_max], 1., closed=False)
-
-    I = cv2.drawContours(I, [pts], -1, (255,0,0), 1) 
     plt.subplot(2,2,4)
     plt.imshow(I)
     plt.show()

@@ -76,7 +76,7 @@ def calc_trajectory(dir_input, subconers, K, M_rltv, size_chessboard, size_img, 
             if np.isnan(rvec).any():
                 break
 
-            cam.set_rtvec(rvec, tvec)
+            cam.set_extrinsic_by_rtvec(rvec, tvec)
             if   name_color == "color_01":
                 coners = np.array(subconers[name_img][name_color]).astype(np.float32)
                 cv2.drawChessboardCorners(image=img_out, patternSize=size_chessboard, corners=coners, patternWasFound=False)

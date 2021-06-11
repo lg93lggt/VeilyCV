@@ -149,6 +149,7 @@ def main(dir_fit_root, dir_calib_root, size_img=None, prop=0.8, z_constraint=np.
         ic(not voxels.any())
         return
 
+
     """
     Marching cubes to get mesh
     """
@@ -157,20 +158,6 @@ def main(dir_fit_root, dir_calib_root, size_img=None, prop=0.8, z_constraint=np.
     mesh = mesh.filter_smooth_simple(number_of_iterations=10)
     mesh = applay_z_colormap(mesh)
 
-    """
-    Alignment mesh
-    """
-    obb = mesh.get_oriented_bounding_box()
-    R = obb.R
-    r = geometries.R_to_r(R)
-
-    r_ = np.array([0, 0, r[0]])
-    R_ = geometries.r_to_R(r_, shape=(3, 3))
-    mesh.rotate(R_, mesh.get_center())
-
-    """
-    IO
-    """
     dir_result.mkdir(parents=True, exist_ok=True)
     pth_mesh_obj = Path(dir_result, "mesh.obj")
     pth_mesh_ply = Path(dir_result, "mesh.ply")

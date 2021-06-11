@@ -1,5 +1,8 @@
 /.vscode
 /test
-/__pycache__
+/flask
+*/__pycache__
 /*/__pycache__
 /*/*/__pycache__
+flask_*.py
+*.sh

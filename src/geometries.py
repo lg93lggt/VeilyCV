@@ -190,12 +190,28 @@ def t_to_T(tvec: np.ndarray)-> np.ndarray:
     T[:3, 3] = tvec
     return T
 
-def decompose_transform_matrix(M: np.ndarray):
+def decompose_transform_matrix_to_RTmat(M: np.ndarray):
+    """
+    Decompse Transform matrix to: 
+        @R mat, shape: (4, 4)
+        @T mat, shape: (4, 4)
+    """
     R = np.eye(4)
     T = np.eye(4)
     R[:3, :3] = M[:3, :3]
     T[:3,  3] = M[:3,  3]
-    return [R, T]
+    return (R, T)
+
+def decompose_transform_matrix_to_Rmat_tvec(M: np.ndarray):
+    """
+    Decompse Transform matrix to: 
+        @R mat, shape: (3, 3)
+        @t vec, shape: (1, 3)
+    """
+    (R, T) = decompose_transform_matrix_to_RTmat(M)
+    R = R[:3, :3]
+    t = T[:3, -1]
+    return (R, t)
 
 def decompose_transform_matrix_to_rtvec(M: np.ndarray) -> np.ndarray:
     """
@@ -229,7 +245,7 @@ def transform_matrix_inverse(M: np.ndarray) -> np.ndarray:
     """
         逆
     """
-    [R, T] = decompose_transform_matrix(M)
+    (R, T) = decompose_transform_matrix_to_RTmat(M)
     tvec = T_to_t(T)
     RI = R.T
     cvec = -RI[:3, :3] @ tvec

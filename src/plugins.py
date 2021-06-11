@@ -2,9 +2,7 @@
 
 import numpy as np
 import cv2
-import pytorch3d
 import open3d as o3d
-import OpenGL 
 import time
 import matplotlib.pyplot as plt
 import argparse

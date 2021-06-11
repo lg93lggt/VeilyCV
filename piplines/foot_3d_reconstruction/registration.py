@@ -201,7 +201,7 @@ def calc_trajectory_by_essential(dir_input, df_corners_regst, K, size_chessboard
                 cam1.set_extrinsic_matrix(M1)
 
 
-                pts4d = cv2.triangulatePoints(cam0._projection_mat_3x4(), cam1._projection_mat_3x4(), pts_std, pts_src)
+                pts4d = cv2.triangulatePoints(cam0._projection_matrix_3x4(), cam1._projection_matrix_3x4(), pts_std, pts_src)
                 pts4d = pts4d/pts4d[-1]
                 pts3d = pts4d[:3].T
 
