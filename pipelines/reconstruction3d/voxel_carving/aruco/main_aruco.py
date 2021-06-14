@@ -17,10 +17,10 @@ import predict_foot_PR
 
 sys.path.append("../..")
 from tools import rename_images, video2images
-from piplines.foot_3d_reconstruction import (calibrate_camera_aruco,
+from pipelines.foot_3d_reconstruction import (calibrate_camera_aruco,
                                              reconstruction_aruco,
                                              registration_aruco)
-from piplines.foot_3d_reconstruction.reconstruction_aruco import ARUCO_BOARD_A3, ARUCO_BOARD_A4
+from pipelines.foot_3d_reconstruction.reconstruction_aruco import ARUCO_BOARD_A3, ARUCO_BOARD_A4
 
 zc1 = np.array([-np.inf, 0])
 zc2 = np.array([0.05, np.inf,])
@@ -41,6 +41,7 @@ UNITIZED_LENGTH_MM = UnitizedLength.MILLIMETER
 
 
 def main(dir_output_project, dir_output_obj, name_output_obj, aruco_board_type=ARUCO_BOARD_A3, unitized_length=UNITIZED_LENGTH_M, **kwargs):
+    
     """
         @dir_output_project:   工程文件夹
         @dir_output_obj:       输出文件夹

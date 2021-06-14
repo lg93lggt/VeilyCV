@@ -5,16 +5,16 @@ from  icecream import ic
 
 from scipy import sparse
 from src import geometries
-from src.piplines.foot_3d_reconstruction.calibrate_dual import load_calib_dual
-from src.piplines.foot_3d_reconstruction.registration import load_trajectory
-from src.piplines.foot_3d_reconstruction.debug import separator
+from src.pipelines.foot_3d_reconstruction.calibrate_dual import load_calib_dual
+from src.pipelines.foot_3d_reconstruction.registration import load_trajectory
+from src.pipelines.foot_3d_reconstruction.debug import separator
 import numpy as np
 import os
 import pandas as pd
 import glob
 import open3d as o3d
 from src.vl3d import voxel_craving, marching_cubes
-from src.utils import plugin_labelme
+from src.utils import plugins_labelme
 from src import Camera
 
 
@@ -39,7 +39,7 @@ def generate_voxel_grid(dir_calib_root, dir_fit_root, size_img, z_constraint=np.
             continue
         [prefix, _] = os.path.splitext(name_img)
         pth_label = os.path.join(dir_label, prefix + ".json")
-        mask = plugin_labelme.generate_mask(pth_label, type_output=np.float32)
+        mask = plugins_labelme.generate_mask(pth_label, type_output=np.float32)
         masks.append(mask)
     
     Ms = np.asarray((traj.loc[df_isvalid, "traj"].values).tolist())
@@ -81,7 +81,7 @@ def main(dir_fit_root, dir_calib_root, size_img, z_constraint=np.array([-0.05, n
     """
     segment images by color in lab space
     """
-    plugin_labelme.generate_masks(os.path.join(dir_fit_root, "labels"), save_mask=True, color=255)
+    plugins_labelme.generate_masks(os.path.join(dir_fit_root, "labels"), save_mask=True, color=255)
 
     dir_debug = os.path.join(dir_fit_root, "debug", "voxel_grid")
     [voxels, grid] = generate_voxel_grid(dir_calib_root, dir_fit_root, size_img=size_img, z_constraint=z_constraint, carve_outside=True, debug=debug, dir_debug=dir_debug)

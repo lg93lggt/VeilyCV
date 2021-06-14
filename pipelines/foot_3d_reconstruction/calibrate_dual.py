@@ -30,10 +30,10 @@ def objective_func(params, kwargs):
     K[:3, :3] = kwargs["K"]
     rvecs = kwargs["rvecs"]
     tvecs = kwargs["tvecs"]
-    Ms = geometries.rtvecs_to_transform_matrixes(rvecs, tvecs)
+    Ms = geometries.rtvecs_to_transform_matrices(rvecs, tvecs)
 
     #params = EasyDict(params)
-    R = geometries.r_to_R(params[0])
+    R = geometries.rvec_to_Rmat(params[0])
     T = geometries.t_to_T(params[1])
 
     errors = np.ones(Ms.shape[0])
@@ -55,7 +55,7 @@ def objective_func_with_zero_z_constraint(params, kwargs):
     K[:3, :3] = kwargs["K"]
     rvecs = kwargs["rvecs"]
     tvecs = kwargs["tvecs"]
-    Ms = geometries.rtvecs_to_transform_matrixes(rvecs, tvecs)
+    Ms = geometries.rtvecs_to_transform_matrices(rvecs, tvecs)
 
     #params = EasyDict(params)
     R = geometries.Rz(params[2], in_degree=True)
@@ -77,11 +77,11 @@ def objective_func_Transform(params, kwargs):
     rvecs = kwargs["rvecs"]
     tvecs = kwargs["tvecs"]
     
-    Ms1 = geometries.rtvecs_to_transform_matrixes(rvecs.color_01.reshape((-1, 3)), tvecs.color_01.reshape((-1, 3)))
-    Ms2 = geometries.rtvecs_to_transform_matrixes(rvecs.color_02.reshape((-1, 3)), tvecs.color_02.reshape((-1, 3)))
+    Ms1 = geometries.rtvecs_to_transform_matrices(rvecs.color_01.reshape((-1, 3)), tvecs.color_01.reshape((-1, 3)))
+    Ms2 = geometries.rtvecs_to_transform_matrices(rvecs.color_02.reshape((-1, 3)), tvecs.color_02.reshape((-1, 3)))
     
 
-    R = geometries.r_to_R(params[:3])
+    R = geometries.rvec_to_Rmat(params[:3])
     T = geometries.t_to_T(params[3:])
 
     X = T@R
@@ -218,8 +218,8 @@ def calibrate_dual(df_pts2d, size_chessboard, size_image, len_chessboard=0.02):
         func = objective_func_with_zero_z_constraint
         x0 = x0_z0
     else:
-        Ms1 = geometries.rtvecs_to_transform_matrixes( dist_rvecs.color_01,  dist_tvecs.color_01)
-        Ms2 = geometries.rtvecs_to_transform_matrixes( dist_rvecs.color_02,  dist_tvecs.color_02)
+        Ms1 = geometries.rtvecs_to_transform_matrices( dist_rvecs.color_01,  dist_tvecs.color_01)
+        Ms2 = geometries.rtvecs_to_transform_matrices( dist_rvecs.color_02,  dist_tvecs.color_02)
         Xs0 = Ms2 @ np.linalg.inv(Ms1)
         X0 = geometries.average_SE3(Xs0)
         func = objective_func_Transform

@@ -30,9 +30,9 @@ from typing import Dict, Union
 sys.path.append("../..")
 from dataset.PeakFootDataset.PeakFootDataset import PeakFootDataset, SIDE_OF_FOOT, UNITIZED_LENGTH, DATA_TYPE
 from src.Camera import PinholeCamera
-from src.plugin.image import cvt_fig_from_plt_to_cv2
-from src.plugin.camera import cvt_camera_vl_with_trajectory_to_torch3d
-from src.plugin.geometry3d import cvt_meshes_o3d_to_torch3d
+from src.plugins.image import cvt_fig_from_plt_to_cv2
+from src.plugins.camera import cvt_camera_vl_with_trajectory_to_torch3d
+from src.plugins.geometry3d import covert_meshes_o3d_to_torch3d
 from src.utils.debug import debug_separator
 os.environ["NUMEXPR_MAX_THREADS"] = "8"
 

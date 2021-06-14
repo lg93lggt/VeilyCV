@@ -9,7 +9,7 @@ import pandas as pd
 from easydict import EasyDict
 from icecream import ic
 from src.segment import by_colors
-from src.piplines.foot_3d_reconstruction import calibrate_dual
+from src.pipelines.foot_3d_reconstruction import calibrate_dual
 
 
 
@@ -45,7 +45,7 @@ def calc_trajectory(dir_input, subconers, K, M_rltv, size_chessboard, size_img, 
             if is_nan1:
                 rvec2 = np.array(traj[name_img]["color_02"].rvec)
                 tvec2 = np.array(traj[name_img]["color_02"].tvec)
-                R2 = geometries.r_to_R(rvec2)
+                R2 = geometries.rvec_to_Rmat(rvec2)
                 T2 = geometries.t_to_T(tvec2)
                 M_2to1 = M_rltv[1]
                 M1 = T2 @ R2 @ M_2to1
@@ -56,7 +56,7 @@ def calc_trajectory(dir_input, subconers, K, M_rltv, size_chessboard, size_img, 
             elif is_nan2:
                 rvec1 = np.array(traj[name_img]["color_01"].rvec)
                 tvec1 = np.array(traj[name_img]["color_01"].tvec)
-                R1 = geometries.r_to_R(rvec1)
+                R1 = geometries.rvec_to_Rmat(rvec1)
                 T1 = geometries.t_to_T(tvec1)
                 M_1to2 = M_rltv[0]
                 M2 = T1 @ R1 @ M_1to2

@@ -7,20 +7,21 @@ import torch
 
 
 
-def cvt_meshes_torch3d_to_o3d(meshes: pytorch3d.structures.Meshes) -> Iterable[o3d.geometry.TriangleMesh]:
-    """[summary]
-
-    [extended_summary]
-
+def convert_meshes_torch3d_to_o3d(meshes: pytorch3d.structures.Meshes) -> List[o3d.geometry.TriangleMesh]:
+    """---
+    convert_meshes_torch3d_to_o3d 
+    [summary]
+    
     Parameters
     ----------
-    meshes : pytorch3d.structures.Meshes
-        [description]
-
+    ### - `meshes` : pytorch3d.structures.Meshes
+        [input meshes in pytorch3d format]
+    
     Returns
     -------
-    Iterable[o3d.geometry.TriangleMesh]
-        [description]
+    List[o3d.geometry.TriangleMesh]
+        [output list of meshes in open3d format]
+    
     """    
     meshes_o3d = []
     for i_mesh in range(len(meshes)):
@@ -33,22 +34,15 @@ def cvt_meshes_torch3d_to_o3d(meshes: pytorch3d.structures.Meshes) -> Iterable[o
     return meshes_o3d
 
 
-def cvt_mesh_o3d_to_torch3d(mesh: o3d.geometry.TriangleMesh, device="cuda:0") -> pytorch3d.structures.Meshes:
-    """---
-    cvt_mesh_o3d_to_torch3d
-    [extended_summary]
+def convert_mesh_o3d_to_torch3d(mesh: o3d.geometry.TriangleMesh, device="cuda:0") -> pytorch3d.structures.Meshes:
+    """[summary]
 
-    Parameters
-    ----------
-    mesh : o3d.geometry.TriangleMesh
-        [triangle mesh in o3d format]
-    device : str, optional
-        [description], by default "cuda:0"
+    Args:
+        mesh (o3d.geometry.TriangleMesh): [description]
+        device (str, optional): [description]. Defaults to "cuda:0".
 
-    Returns
-    -------
-    pytorch3d.structures.Meshes
-        [description]
+    Returns:
+        pytorch3d.structures.Meshes: [description]
     """    
     v = np.asarray(mesh.vertices).astype(np.float32)
     f = np.asarray(mesh.triangles).astype(int)
@@ -59,7 +53,7 @@ def cvt_mesh_o3d_to_torch3d(mesh: o3d.geometry.TriangleMesh, device="cuda:0") ->
     return meshes_torch3d
 
 
-def cvt_meshes_o3d_to_torch3d(meshes: Iterable[o3d.geometry.TriangleMesh], device="cuda:0") -> pytorch3d.structures.Meshes:
+def covert_meshes_o3d_to_torch3d(meshes: Iterable[o3d.geometry.TriangleMesh], device="cuda:0") -> pytorch3d.structures.Meshes:
     """[summary]
 
     [extended_summary]
@@ -88,7 +82,7 @@ def cvt_meshes_o3d_to_torch3d(meshes: Iterable[o3d.geometry.TriangleMesh], devic
     return meshes_torch3d
 
 
-def cvt_mesh_o3d_to_vl3d(mesh: o3d.geometry.TriangleMesh):
+def convert_mesh_o3d_to_vl3d(mesh: o3d.geometry.TriangleMesh):
     """[summary]
 
     [extended_summary]

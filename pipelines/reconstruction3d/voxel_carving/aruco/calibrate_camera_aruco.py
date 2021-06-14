@@ -1,19 +1,16 @@
 
-import os
-import json
-import glob
 import sys
-from typing import List
-import numpy as np
-import cv2
-from cv2 import aruco
-import pandas as pd
 from pathlib import Path
-from matplotlib import pyplot as plt
+from typing import Iterable, List, Union
+
+import cv2
+import numpy as np
+import pandas as pd
+from cv2 import aruco
 from icecream import ic
+from matplotlib import pyplot as plt
 
 sys.path.append("../..")
-from src import geometries
 from src.Camera import PinholeCamera
 from src.utils.debug import debug_separator, debug_vis
 
@@ -21,7 +18,6 @@ from src.utils.debug import debug_separator, debug_vis
 def without_nan(df: pd.DataFrame):
     df_without = df.loc[~df.isna()]
     return df_without
-
 
 @ debug_separator
 def find_corners_aruco(dictionary_aruco, dir_input, suffix_input=".*", debug=False, dir_debug=None):
@@ -160,6 +156,27 @@ def calibrate_aruco(board_aruco, size_img, df_corners):
 
 @ debug_separator
 def evaluatle(board_aruco, dir_input, sr_camera_params: pd.Series, df_trajectory: pd.DataFrame, df_corners: pd.DataFrame, debug: int=True, dir_debug: Path or str=None):
+    """evaluatle [summary]
+    
+    [extended_summary]
+    
+    Parameters
+    ----------
+    - `board_aruco` : [type]
+        [description]
+    - `dir_input` : [type]
+        [description]
+    - `sr_camera_params` : pd.Series
+        [description]
+    - `df_trajectory` : pd.DataFrame
+        [description]
+    - `df_corners` : pd.DataFrame
+        [description]
+    debug : int, optional
+        [description], by default True
+    dir_debug : Pathorstr, optional
+        [description], by default None
+    """    
     dir_calib_root = Path(dir_input)
     dir_debug = Path(dir_debug, "eval")
 
@@ -200,7 +217,7 @@ def evaluatle(board_aruco, dir_input, sr_camera_params: pd.Series, df_trajectory
     return
 
 
-def main(board_aruco, dir_input: Path or str, size_img=None, debug=False, restart=True):
+def main(board_aruco, dir_input: Union[Path, str], size_img: Iterable[int]=None, debug=False, restart=True):
     dir_input  = Path(dir_input)
     dir_image  = Path(dir_input, "raw"  )
     dir_output = Path(dir_input, "data" )

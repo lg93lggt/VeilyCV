@@ -1,6 +1,6 @@
 
 import cv2
-from piplines.foot_3d_reconstruction.calibrate_camera_aruco import load_camera_parameters, load_trajectory   
+from pipelines.foot_3d_reconstruction.calibrate_camera_aruco import load_camera_parameters, load_trajectory   
 from src import geometries
 import numpy as np
 from pathlib import Path

@@ -1,5 +1,6 @@
 
-from os.path import splitext
+from pathlib import Path
+from typing import Union
 import numpy as np
 import cv2
 import json
@@ -7,7 +8,7 @@ import glob
 import os
 from easydict import EasyDict
 
-def covert_label_to_mask(pth_json):
+def convert_label_to_mask(pth_json: Union[str, Path]) -> np.ndarray:
     with open(pth_json, 'r') as fp:
         data = EasyDict(json.load(fp))
     pts = np.asarray(data["shapes"][0]["points"])
@@ -16,7 +17,7 @@ def covert_label_to_mask(pth_json):
     mask = cv2.fillPoly(mask, [pts.astype(int)], 1)
     return mask
 
-def covert_labels_to_maskes(dir_json, dir_output_mask, suffix_output=".jpg"):
+def convert_labels_to_maskes(dir_json, dir_output_mask, suffix_output=".jpg"):
     if not os.path.exists(dir_output_mask):
         os.makedirs(dir_output_mask)
 
@@ -27,11 +28,11 @@ def covert_labels_to_maskes(dir_json, dir_output_mask, suffix_output=".jpg"):
         [prefix, _] = os.path.splitext(name_json)
         pth_output_mask = os.path.join(dir_output_mask, prefix+suffix_output)
 
-        mask = covert_label_to_mask(pth_json)
+        mask = convert_label_to_mask(pth_json)
         cv2.imwrite(pth_output_mask, mask)
         print("Save mask:", pth_output_mask)
     return
 
 
 if __name__ == '__main__':
-    covert_labels_to_maskes("test_428/labels", "test_428/masks")
+    convert_labels_to_maskes("test_428/labels", "test_428/masks")

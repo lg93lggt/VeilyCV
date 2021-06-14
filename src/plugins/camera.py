@@ -27,7 +27,7 @@ v: (0, h -1) -> (+1, -1)
 """
 
 @ enum.unique
-class PLUGIN_PYTORCH3D_CAMERA(enum.Enum):
+class plugins_PYTORCH3D_CAMERA(enum.Enum):
     """---
     Format of pytorch3d camera intrinsic matrix 
     """
@@ -39,7 +39,7 @@ def cvt_intrinsic_matrix_cv2_to_torch3d(
     K: np.ndarray, 
     size_image: Tuple[int], 
     n_batch: int = 1, 
-    flags: PLUGIN_PYTORCH3D_CAMERA = PLUGIN_PYTORCH3D_CAMERA.K, 
+    flags: plugins_PYTORCH3D_CAMERA = plugins_PYTORCH3D_CAMERA.K, 
     device: str = "cuda:0"
 ) -> torch.Tensor:
     r"""---
@@ -58,16 +58,16 @@ def cvt_intrinsic_matrix_cv2_to_torch3d(
         (height, width), image size in cv2 format
     ### - `n_batch` (default=1): 
         num of batch in output camera intrinsic matrix _K
-    ### - `flags` (default=PLUGIN_PYTORCH3D_CAMERA.K): 
-    - PLUGIN_PYTORCH3D_CAMERA.K
-    - PLUGIN_PYTORCH3D_CAMERA.PROJECTION_MATRIX
+    ### - `flags` (default=plugins_PYTORCH3D_CAMERA.K): 
+    - plugins_PYTORCH3D_CAMERA.K
+    - plugins_PYTORCH3D_CAMERA.PROJECTION_MATRIX
         
     Returns
     -------
     ### - `_K`: 
         shape=(n_batch, 4, 4), output camera intrinsic matrix in pytorch3d format
-        format PerspectiveCameras.K if flags==PLUGIN_PYTORCH3D_CAMERA.K
-        format PerspectiveCameras.get_projection_transform().get_matrix() if flags==PLUGIN_PYTORCH3D_CAMERA.PROJECTION_MATRIX
+        format PerspectiveCameras.K if flags==plugins_PYTORCH3D_CAMERA.K
+        format PerspectiveCameras.get_projection_transform().get_matrix() if flags==plugins_PYTORCH3D_CAMERA.PROJECTION_MATRIX
 
     Raises
     ------
@@ -88,9 +88,9 @@ def cvt_intrinsic_matrix_cv2_to_torch3d(
         [ 0,  0, 1, 0],
     ]).to(dtype=torch.float32, device=device)
     _K = S @ K
-    if flags == PLUGIN_PYTORCH3D_CAMERA.K:
+    if flags == plugins_PYTORCH3D_CAMERA.K:
         _K = _K
-    elif flags == PLUGIN_PYTORCH3D_CAMERA.PROJECTION_MATRIX:
+    elif flags == plugins_PYTORCH3D_CAMERA.PROJECTION_MATRIX:
         _K = _K.permute(0, 2, 1)
     else:
         raise KeyError("Using unspportted flags in Parameters.")
@@ -101,7 +101,7 @@ def cvt_intrinsic_matrix_cv2_to_torch3d(
 def cvt_intrinsic_matrix_torch3d_to_cv2(
     K: torch.Tensor, 
     size_image: torch.Tensor, 
-    flags: PLUGIN_PYTORCH3D_CAMERA = PLUGIN_PYTORCH3D_CAMERA.K
+    flags: plugins_PYTORCH3D_CAMERA = plugins_PYTORCH3D_CAMERA.K
 ) -> np.ndarray:
     r"""---
     # cvt_intrinsic_matrix_cv2_to_torch3d
@@ -120,13 +120,13 @@ def cvt_intrinsic_matrix_torch3d_to_cv2(
     ### - `size_image`: 
         shape=(1, width, height), image size in pytorch3d camera format
     
-    ### - `flags` (default=PLUGIN_PYTORCH3D_CAMERA.K): 
+    ### - `flags` (default=plugins_PYTORCH3D_CAMERA.K): 
     
-        1. PLUGIN_PYTORCH3D_CAMERA.K
+        1. plugins_PYTORCH3D_CAMERA.K
         
         input K is PerspectiveCameras.K
         
-        2. PLUGIN_PYTORCH3D_CAMERA.PROJECTION_MATRIX
+        2. plugins_PYTORCH3D_CAMERA.PROJECTION_MATRIX
         
         input K is PerspectiveCameras.get_projection_transform().get_matrix()
 
@@ -149,9 +149,9 @@ def cvt_intrinsic_matrix_torch3d_to_cv2(
         [   0,     0, 0,     1],
         [   0,     0, 1,     0],
     ]).to(dtype=torch.float32, device=device)
-    if flags == PLUGIN_PYTORCH3D_CAMERA.K:
+    if flags == plugins_PYTORCH3D_CAMERA.K:
         K = K
-    elif flags == PLUGIN_PYTORCH3D_CAMERA.PROJECTION_MATRIX:
+    elif flags == plugins_PYTORCH3D_CAMERA.PROJECTION_MATRIX:
         K = K.permute(0, 2, 1)
     else:
         raise KeyError("Using unspportted flags in Parameters.")
@@ -330,7 +330,7 @@ def cvt_camera_vl_to_torch3d(camera: PinholeCamera, n_batch: int = 1, device: st
         K=camera.intrinsic._mat_4x4(), 
         size_image=camera.size_image, 
         n_batch=n_batch,
-        flags=PLUGIN_PYTORCH3D_CAMERA.K, 
+        flags=plugins_PYTORCH3D_CAMERA.K, 
         device=device
     )
     size_image_torch = cvt_size_image_cv2_to_torch3d(

@@ -15,10 +15,10 @@ from pathlib import Path
 
 sys.path.append("..")
 from src import geometries
-from piplines.foot_3d_reconstruction.calibrate_camera_aruco import load_camera_parameters, load_trajectory
+from pipelines.foot_3d_reconstruction.calibrate_camera_aruco import load_camera_parameters, load_trajectory
 from src.utils.debug import debug_separator, debug_vis
 from src.vl3d import voxel_craving, marching_cubes
-from src.utils import plugin_labelme
+from src.utils import plugins_labelme
 from src import Camera
 
 
@@ -47,7 +47,7 @@ def reconstructe_as_voxel_grid(dir_input, sr_camera_params, df_trajectory, grid=
     
     rvecs = np.asarray((df_trajectory.loc[df_isvalid, "rvec"].values).tolist(), dtype=float)
     tvecs = np.asarray((df_trajectory.loc[df_isvalid, "tvec"].values).tolist(), dtype=float)
-    Ms = geometries.rtvecs_to_transform_matrixes(rvecs, tvecs, shape=(3, 4))
+    Ms = geometries.rtvecs_to_transform_matrices(rvecs, tvecs, shape=(3, 4))
     
 
     if grid is None:
@@ -113,7 +113,7 @@ def main(dir_fit_root, dir_calib_root, size_img=None, prop=0.8, z_constraint=np.
     """
     segment images by color in lab space
     """
-    plugin_labelme.generate_masks(os.path.join(dir_fit_root, "labels"), save_mask=True, color=255)
+    plugins_labelme.generate_masks(os.path.join(dir_fit_root, "labels"), save_mask=True, color=255)
 
     """
     Load camera parameters and trajectory frin pkl file
@@ -165,7 +165,7 @@ def main(dir_fit_root, dir_calib_root, size_img=None, prop=0.8, z_constraint=np.
     r = geometries.R_to_r(R)
 
     r_ = np.array([0, 0, r[0]])
-    R_ = geometries.r_to_R(r_, shape=(3, 3))
+    R_ = geometries.rvec_to_Rmat(r_, shape=(3, 3))
     mesh.rotate(R_, mesh.get_center())
 
     """

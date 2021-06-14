@@ -4,7 +4,7 @@ from typing import Iterable, List, Literal, Sequence, Tuple, Union
 import os
 
 from torch.nn.functional import normalize
-from piplines.foot_3d_reconstruction.main_aruco import UNITIZED_LENGTH
+from pipelines.foot_3d_reconstruction.main_aruco import UNITIZED_LENGTH
 import pytorch3d.io
 from pytorch3d.structures import Meshes
 import pytorch3d.loss
@@ -29,7 +29,7 @@ import multiprocessing
 os.environ["NUMEXPR_MAX_THREADS"] = "8"
 sys.path.append("../..")
 from src.utils.debug import debug_separator, debug_vis
-from src.plugin.geometry3d import cvt_meshes_o3d_to_torch3d, cvt_meshes_torch3d_to_o3d
+from src.plugins.geometry3d import covert_meshes_o3d_to_torch3d, convert_meshes_torch3d_to_o3d
 
 
 
@@ -357,7 +357,7 @@ class PeakFootsDataset(Dataset):
         return loss
 
     def crop_meshes_by_z(self, meshes: Meshes, z: float=7, flag_unitized_length: UNITIZED_LENGTH=UNITIZED_LENGTH.CM) -> Meshes:
-        meshes_o3d = cvt_meshes_torch3d_to_o3d(meshes)
+        meshes_o3d = convert_meshes_torch3d_to_o3d(meshes)
         for mesh in meshes_o3d:
             bbox = mesh.get_axis_aligned_bounding_box()
             bbox_new = o3d.geometry.AxisAlignedBoundingBox(
@@ -369,7 +369,7 @@ class PeakFootsDataset(Dataset):
                 ])
             )
             meshes_new = [mesh.crop(bbox_new)]
-            meshes_crop = cvt_meshes_o3d_to_torch3d(meshes=meshes_new, device=self.device)
+            meshes_crop = covert_meshes_o3d_to_torch3d(meshes=meshes_new, device=self.device)
         return meshes_crop
 
 def change_unitized_length(meshes_src: Meshes, flags_unitized_length_src: UNITIZED_LENGTH, flags_unitized_length_dst: UNITIZED_LENGTH) -> Meshes:
@@ -388,7 +388,7 @@ if __name__ == '__main__':
 
     pth_input = Path("/media/veily3/data_ligan/voxel_carving_data/project/ligan_right_0526-1317/result")
 
-    mesh_src = cvt_meshes_o3d_to_torch3d([o3d.io.read_triangle_mesh(str(pth_input / "mesh.obj"))])
+    mesh_src = covert_meshes_o3d_to_torch3d([o3d.io.read_triangle_mesh(str(pth_input / "mesh.obj"))])
     mesh_src = change_unitized_length(meshes_src=mesh_src, flags_unitized_length_src=UNITIZED_LENGTH.M, flags_unitized_length_dst=UNITIZED_LENGTH.MM)
     pytorch3d.io.save_obj(pth_input / "right_mm.obj", mesh_src.verts_list()[0], mesh_src.faces_list()[0])
 
@@ -404,7 +404,7 @@ if __name__ == '__main__':
     #names_min = ["000287"]
     ic(names_min) # 000864
 
-    mesh_src = cvt_meshes_o3d_to_torch3d([o3d.io.read_triangle_mesh(str(pth_input / "right_crop_norm.obj"))])
+    mesh_src = covert_meshes_o3d_to_torch3d([o3d.io.read_triangle_mesh(str(pth_input / "right_crop_norm.obj"))])
     [_, mesh_simi] = peak_cropped_dataset._get_items_by_names(names_min, DATA_TYPE.NORMALIZED_X)
     [_, mesh_gt  ] = peak_cropped_dataset._get_items_by_names(["ligan"], DATA_TYPE.NORMALIZED_X)
 
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     meshes = meshes.update_padded(verts_T)
     ic(meshes.get_bounding_boxes())
     i = 0
-    meshes = cvt_meshes_torch3d_to_o3d(meshes)
+    meshes = convert_meshes_torch3d_to_o3d(meshes)
     for m in meshes:
         o3d.io.write_triangle_mesh("test/test_528/{:0>3d}.obj".format(i+1), m, )
         i += 1

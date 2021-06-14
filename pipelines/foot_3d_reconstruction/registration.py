@@ -10,8 +10,8 @@ import pandas as pd
 from easydict import EasyDict
 from icecream import ic
 from src.segment import by_colors
-from src.piplines.foot_3d_reconstruction import calibrate_dual
-from src.piplines.foot_3d_reconstruction.debug import debug_vis, separator
+from src.pipelines.foot_3d_reconstruction import calibrate_dual
+from src.pipelines.foot_3d_reconstruction.debug import debug_vis, separator
 from scipy.optimize import minimize
 import open3d as o3d
 

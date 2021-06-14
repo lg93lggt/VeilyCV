@@ -1,13 +1,41 @@
 
-from typing import *
+from typing import Iterable, Tuple, List, Union
 import numpy as np
+from numpy import typing as npt
 import cv2
-from easydict import EasyDict
+from scipy.spatial.transform import Rotation
+
 import scipy 
 
 
 
 def to_homo(P, axis: int=0):
+    """---
+    to_homo
+    ----------
+        [summary]
+    
+    Parameters
+    ----------
+    ### - `P` : [type]
+        [description]
+        
+    ### - `axis` : int, optional, default=0
+        [description]
+        
+    
+    Returns
+    -------
+    [type]
+        [description]
+    
+    Raises
+    ------
+    - `IndexError`
+        [Unknown Dimension]
+    - `IndexError`
+        [Unknown Main Axis]
+    """    
     n_dims = len(P.shape)
     if axis == 0:
         if n_dims == 1:
@@ -28,10 +56,28 @@ def to_homo(P, axis: int=0):
     else :
         raise IndexError("Unknown Main Axis: axis={:d}".format(axis))
 
-def distance_SO3(R1, R2):
-    d12 = np.linalg.norm(scipy.linalg.logm(R1.T @ R2)) / np.sqrt(2)
-    d21 = np.linalg.norm(scipy.linalg.logm(R2.T @ R1)) / np.sqrt(2)
-    dist = (d12 + d21) / 2
+def calc_distance_SO3(R1: np.ndarray, R2: np.ndarray):
+    """---
+    calc_distance_SO3
+    ----------
+        Calculate distance of 2 SO3 matrix
+    
+    Parameters
+    ----------
+    ### - `R1` : np.ndarray
+        input rotaion matrix 1
+        
+    ### - `R2` : np.ndarray
+        input rotaion matrix 2
+        
+    Returns
+    -------
+    ### - `dist` : float
+        output distance of 2 rotaion matrices
+    """    
+    d12: float = np.linalg.norm(scipy.linalg.logm(R1.T @ R2)) / np.sqrt(2)
+    d21: float = np.linalg.norm(scipy.linalg.logm(R2.T @ R1)) / np.sqrt(2)
+    dist: float = (d12 + d21) / 2
     return dist
 
 def distance_list_SO3(Rs1, Rs2):
@@ -40,7 +86,7 @@ def distance_list_SO3(Rs1, Rs2):
     for idx in range(num):
         R1 = Rs1[idx]
         R2 = Rs2[idx]
-        dist[idx] = distance_SO3(R1, R2)
+        dist[idx] = calc_distance_SO3(R1, R2)
     return np.average(dist)
 
 def average_rvecs(rvecs):
@@ -48,15 +94,14 @@ def average_rvecs(rvecs):
 
     R_avg = np.zeros((3, 3))
     for rvec in rvecs:
-        R = r_to_R(rvec)[:3, :3]
+        R = rvec_to_Rmat(rvec)[:3, :3]
         R_avg += scipy.linalg.logm(R)
     R_avg = R_avg / n_vecs
     R_avg = scipy.linalg.expm(R_avg)
     rvec_avg = R_to_r(R_avg)
     return rvec_avg
 
-
-def average_SO3(Rs):
+def average_SO3(Rs: np.ndarray) -> np.ndarray:
     n_mats = Rs.shape[0]
 
     R_avg = np.zeros((3, 3))
@@ -66,7 +111,7 @@ def average_SO3(Rs):
     R_avg = scipy.linalg.expm(R_avg)
     return R_avg
         
-def average_SE3(Ms):
+def average_SE3(Ms: np.ndarray) -> np.ndarray:
     rs, ts = decompose_transform_matrices_to_rtvecs(Ms)
     Rs = rs_to_Rs(rs, shape=(3, 3))
     [r_avg, _] = cv2.Rodrigues(average_SO3(Rs))
@@ -76,53 +121,118 @@ def average_SE3(Ms):
     M_avg = rtvec_to_transform_matrix(rvec=r_avg, tvec=t_avg)
     return M_avg
 
-def rtvec_to_transform_matrix(rvec=np.zeros(3), tvec=np.zeros(3), shape=(4, 4)):
-    M = np.eye(4)
-    [R, _] = cv2.Rodrigues(rvec)
+def rtvec_to_transform_matrix(rvec: npt.ArrayLike[float]=np.zeros(3), tvec: npt.ArrayLike[float]=np.zeros(3), shape=(4, 4)):
+    """---
+    rtvec_to_transform_matrix
+    ----------
+        Build transform matrix by rotation and translation vector
+    
+    Parameters
+    ----------
+    ### - `rvec` : npt.ArrayLike[float], optional, default=np.zeros(3)
+        rotation vector
+        
+    ### - `tvec` : npt.ArrayLike[float], optional, default=np.zeros(3)
+        translation vector
+        
+    ### - `shape` : tuple, optional, default=(4, 4)
+        shape of output transform matrix, supported shapes:
+            - (3, 4)
+            - (4, 4)
+    
+    Returns
+    -------
+    ### - `M` : np.ndarray
+        output transform matrix
+        
+    Raises
+    ------
+    - `IndexError`
+        [Shape of matrix is unsupported.]
+    """
+    R: np.ndarray 
+    (R, _) = cv2.Rodrigues(rvec)
+    tvec: np.ndarray = np.asarray(tvec)
+    tvec = tvec.flatten()
+    M: np.ndarray = np.eye(4)
     M[:3, :3] = R
-    M[:3,  3] = tvec.flatten()
+    M[:3,  3] = tvec
     if   shape == (4, 4):
         return M
     elif shape == (3, 4):
         return M[:3]
     else:
-        raise IndexError("Unsuppoert Matrix Shape: {}, Which Should Be (4, 4) or (3, 4)".format(shape))
+        raise IndexError("Shape of matrix {} is unsupported.".format(shape))
 
-
-def rtvecs_to_transform_matrixes(rvecs=np.zeros((1, 3)), tvecs=np.zeros((1, 3)), shape=(4, 4)):
-    M = np.eye(4)
-    if isinstance(rvecs, List):
-        rvecs = np.array(rvecs)
-    if isinstance(tvecs, List):
-        tvecs = np.array(tvecs)
+def rtvecs_to_transform_matrices(rvecs: Iterable[np.ndarray], tvecs: Iterable[np.ndarray], shape=(4, 4)):
+    """---
+    rtvecs_to_transform_matrices [summary]
+    
+    Parameters
+    ----------
+    ### - `rvecs` : Iterable[np.ndarray]
+        batch of rotation vectors
+        
+    ### - `tvecs` : Iterable[np.ndarray]
+        batch of translation vectors
+        
+    ### - `shape` : tuple, optional, default=(4, 4), supported shapes:
+        - (3, 4)
+        - (4, 4)
+        
+    Returns
+    -------
+    ### - `Ms` : np.ndarray
+        batch of transform matrices
+    
+    Raises
+    ------
+    - `AssertionError`
+        [Nuequal batchsize of rvecs and tvecs.]
+    - `ValueError`
+        [Unsupported matrix shape.]
+    """    
+    rvecs: np.ndarray = np.asarray(rvecs)
+    tvecs: np.ndarray = np.asarray(tvecs)
     n_rvecs = rvecs.shape[0]
     n_tvecs = rvecs.shape[0]
-    if n_rvecs != n_tvecs:
-        raise IndexError("Nuequal Num of rvecs and tvecs.")
+    assert (n_rvecs != n_tvecs), "Nuequal batchsize of rvecs and tvecs."
+    
+    __Ms = np.expand_dims(np.eye(4), 0).repeat(n_rvecs,axis=0)
+    __R: Rotation = Rotation.from_rotvec(rvecs)
+    __Ms[:, :3, :3] = __R.as_matrix()
+    __Ms[:, :3, -1] = tvecs
+    Ms: np.ndarray
+    if   shape == (4, 4):
+        Ms = __Ms
+    elif shape == (3, 4):
+        Ms = __Ms[:, :3]
     else:
-        Ms = np.expand_dims(np.eye(4),0).repeat(n_rvecs,axis=0)
-        for i_vec in range(n_rvecs):
-            rvec = rvecs[i_vec]
-            tvec = tvecs[i_vec]
-
-            [R, _] = cv2.Rodrigues(rvec)
-            Ms[i_vec, :3, :3] = R
-            Ms[i_vec, :3,  3] = tvec.flatten()
-        if   shape == (4, 4):
-            return Ms
-        elif shape == (3, 4):
-            return Ms[:, :3]
-        else:
-            raise IndexError("Unsuppoert Matrix Shape: {}, Which Should Be (4, 4) or (3, 4)".format(shape))
-
+        raise ValueError("Unsupported matrix shape: {}, which should be (4, 4) or (3, 4)".format(shape))
+    return Ms
 
 def transform3d(M, P, axis: int=0, is_homo: bool=True):
     P = to_homo(P, axis=axis)
     _P = M @ P
     return _P
 
-
 def Rz(theta_z, in_degree=False):
+    """---
+    Rz [summary]
+    
+    Parameters
+    ----------
+    ### - `theta_z` : [type]
+        [description]
+        
+    ### - `in_degree` : bool, optional, default=False
+        [description]
+    
+    Returns
+    -------
+    [type]
+        [description]
+    """    
     if in_degree:
         theta_z = np.deg2rad(theta_z)
     Rz = np.eye(4)
@@ -132,29 +242,69 @@ def Rz(theta_z, in_degree=False):
     ])
     return Rz
 
-
 def R_to_r(R: np.ndarray)-> np.ndarray:
+    """---
+    R_to_r
+    -------
+        rotation matrix to vector
+        
+    Parameters
+    ----------
+    ### - `R` : [np.ndarray]
+        input rotation matrix
+    
+    Returns
+    -------
+    ### - `rvec` : [np.ndarray]
+        output rotation vector
+        
+    Raises
+    ------
+    - `AssertionError`
+        [Unsupported matrix R shape.]
     """
-        旋转矩阵转向量
-    """
+    assert (R.shape not in [(3, 3), (4, 4)]), "Unsupported matrix R shape: {}, which should be (3, 3) or (4, 4)".format(R.shape)
     R_ = R[:3, :3]
-    rvec = cv2.Rodrigues(R_)[0].flatten()
+    __R: Rotation = Rotation().from_matrix(R_)
+    rvec: np.ndarray = __R.as_rotvec()
     return rvec
 
-
-def r_to_R(rvec: np.ndarray, shape=(4, 4))-> np.ndarray:
+def rvec_to_Rmat(rvec: np.ndarray, shape=(4, 4))-> np.ndarray:
+    """---
+    rvec_to_Rmat
+    -------
+        rotation vector to matrix 
+        
+    Parameters
+    ----------
+    ### - `rvec` : [np.ndarray]
+        input rotation vector
+        
+    ### - `shape` : Tuple[int], optional, default=(3, 3)
+        shape of ouput rotation matrix, supported sizes:
+        - (3, 3)
+        - (4, 4)
+    
+    Returns
+    -------
+    ### - `R` : [np.ndarray]
+        output rotation matrix
+        
+    Raises
+    ------
+    - `AssertionError`
+        [Unsupported shape.]
     """
-        旋转向量转矩阵
-    """
-    R = np.eye(4)
-    R_3x3 = cv2.Rodrigues(rvec)[0]
-    R[:3,  :3] = R_3x3
+    __R: Rotation = Rotation().from_rotvec(rvec)
+    R: np.ndarray 
     if   shape==(4, 4):
-        return R
+        R = np.eye(4) 
+        R[:3, :3] = __R.as_matrix()
     elif shape==(3, 3):
-        return R_3x3
+        R = __R.as_matrix()
     else:
-        raise IndexError("shape should be 3x3 or 4x4")
+        raise IndexError("Unsupported shape {}.".format(shape))
+    return R
 
 def rs_to_Rs(rvecs: np.ndarray, shape=(4, 4))-> np.ndarray:
     """
@@ -169,7 +319,7 @@ def rs_to_Rs(rvecs: np.ndarray, shape=(4, 4))-> np.ndarray:
         raise IndexError("shape should be 3x3 or 4x4")
     
     for [i, rvec] in enumerate(rvecs):
-        R = r_to_R(rvec, shape=shape)
+        R = rvec_to_Rmat(rvec, shape=shape)
         Rs[i] = R
     return Rs
 
@@ -190,14 +340,28 @@ def t_to_T(tvec: np.ndarray)-> np.ndarray:
     T[:3, 3] = tvec
     return T
 
-def decompose_transform_matrix_to_RTmat(M: np.ndarray):
-    """
-    Decompse Transform matrix to: 
-        @R mat, shape: (4, 4)
-        @T mat, shape: (4, 4)
-    """
-    R = np.eye(4)
-    T = np.eye(4)
+def decompose_transform_matrix_to_RTmat(M: np.ndarray) -> Tuple[np.ndarray]:
+    """---
+    decompose_transform_matrix_to_RTmat
+    ----------
+        Decompose transform matrix to 4x4 rotation and translation matrix
+    
+    Parameters
+    ----------
+    ### - `M` : np.ndarray
+        input transform matrix, supported shapes:
+        - (3, 4)
+        - (4, 4)
+        
+    Returns
+    -------
+    [type]
+        [Shape of M should be (3, 4) or (4, 4)]
+    """    
+    if (M.shape != (3, 4)) or (M.shape != (4, 4)):
+        raise IndexError("Shape of M should be (3, 4) or (4, 4)")
+    R: np.ndarray = np.eye(4)
+    T: np.ndarray = np.eye(4)
     R[:3, :3] = M[:3, :3]
     T[:3,  3] = M[:3,  3]
     return (R, T)
@@ -227,19 +391,29 @@ def decompose_transform_matrix_to_rtvec(M: np.ndarray) -> np.ndarray:
     tvec = T_to_t(T)
     return [rvec, tvec]
 
-
-def decompose_transform_matrices_to_rtvecs(Ms: np.ndarray) -> np.ndarray:
-    """
-        位姿矩阵转向量
-    """
-    n_veces = Ms.shape[0]
-    rvecs = np.zeros((n_veces, 3))
-    tvecs = np.zeros((n_veces, 3))
-    for (idx_vec, M) in enumerate(Ms):
-        [rvecs[idx_vec], tvecs[idx_vec]] = decompose_transform_matrix_to_rtvec(M)
-
-    return [rvecs, tvecs]
-
+def decompose_transform_matrices_to_rtvecs(Ms: Iterable[np.ndarray]) -> np.ndarray:
+    """---
+    decompose_transform_matrices_to_rtvecs
+    ----------
+        decompose transform matrices Ms to rotation and tranlation vectors
+    
+    Parameters
+    ----------
+    ### - `Ms` : Iterable[np.ndarray]
+        transform matrices in a batch, N = batchsize
+    Returns
+    -------
+    ### - `rvecs` : np.ndarray
+        rotation vectors in a batch, shape = (N, 3)
+        
+    ### - `tvecs` : np.ndarray
+        tranlation vectors in a batch, shape = (N, 3)
+    """    
+    Ms: np.ndarray = np.asarray(Ms)
+    __R: Rotation = Rotation.from_matrix(Ms[:, :3, :3])
+    rvecs: np.ndarray = __R.as_rotvec()
+    tvecs: np.ndarray = Ms[:, :3, -1]
+    return (rvecs, tvecs)
 
 def transform_matrix_inverse(M: np.ndarray) -> np.ndarray:
     """
@@ -258,10 +432,9 @@ def rtvec_to_rtmat(rtvec: np.ndarray) -> np.ndarray:
         位姿向量转矩阵
     """
     rtvec = rtvec.reshape(6)
-    R = r_to_R(rtvec[:3])
+    R = rvec_to_Rmat(rtvec[:3])
     T = t_to_T(rtvec[3:])
     return T @ R
-
 
 def rtvec_degree2rad(rtvec_degree: np.ndarray) -> np.ndarray:
     """
@@ -270,7 +443,6 @@ def rtvec_degree2rad(rtvec_degree: np.ndarray) -> np.ndarray:
     rtvec_rad = rtvec_degree.copy()
     rtvec_rad[:3] = np.pi * (rtvec_rad[:3] / 180)
     return rtvec_rad
-    
 
 def rtvec_rad2degree(rtvec_rad: np.ndarray) -> np.ndarray:
     """
@@ -279,7 +451,6 @@ def rtvec_rad2degree(rtvec_rad: np.ndarray) -> np.ndarray:
     rtvec_degree = rtvec_rad.copy()
     rtvec_degree[:3] = 180 * (rtvec_degree[:3] / np.pi)
     return rtvec_degree
-
 
 def solve_projection_matrix_3d_to_2d(points3d: np.ndarray, points2d: np.ndarray, method="svd")-> np.ndarray:
     """
@@ -414,7 +585,7 @@ def project_points3d_to_2d(rtvec: np.ndarray, mat_projection: np.ndarray, points
     #rvec[2] = 0
 
     T = t_to_T(tvec)
-    R = r_to_R(rvec)
+    R = rvec_to_Rmat(rvec)
 
     V = T @ R
 

@@ -1,0 +1,45 @@
+{{! VeilyCV Docstring Template }}
+---
+{{summaryPlaceholder}}
+
+{{#parametersExist}}
+Parameters
+----------
+{{#args}}
+### - `{{var}}` : {{typePlaceholder}}
+    {{descriptionPlaceholder}}
+    
+{{/args}}
+{{#kwargs}}
+### - `{{var}}` : {{typePlaceholder}}, optional, default={{&default}}
+    {{descriptionPlaceholder}}
+    
+{{/kwargs}}
+{{/parametersExist}}
+
+Returns
+-------
+{{#returnsExist}}
+{{#returns}}
+{{typePlaceholder}}
+    {{descriptionPlaceholder}}
+{{/returns}}
+{{/returnsExist}}
+{{#yieldsExist}}
+
+Yields
+-------
+{{#yields}}
+{{typePlaceholder}}
+    {{descriptionPlaceholder}}
+{{/yields}}
+{{/yieldsExist}}
+{{#exceptionsExist}}
+
+Raises
+------
+{{#exceptions}}
+- `{{type}}`
+    {{descriptionPlaceholder}}
+{{/exceptions}}
+{{/exceptionsExist}}

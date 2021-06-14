@@ -3,7 +3,7 @@ import sys
 from typing import List, Literal, Sequence, Tuple, Union
 
 from torch.nn.functional import normalize
-from piplines.foot_3d_reconstruction.main_aruco import UNITIZED_LENGTH
+from pipelines.foot_3d_reconstruction.main_aruco import UNITIZED_LENGTH
 import pytorch3d.io
 import pytorch3d.structures
 import pytorch3d.loss
@@ -18,7 +18,6 @@ import os
 import pandas as pd
 from enum import Enum, auto, IntEnum, Flag, unique
 import torch
-from torch._C import device
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SequentialSampler 
 import open3d as o3d
@@ -27,7 +26,7 @@ import multiprocessing
 
 sys.path.append("../..")
 from src.utils.debug import debug_separator, debug_vis
-from src.plugin.geometry3d import cvt_meshes_torch3d_to_o3d
+from src.plugins.geometry3d import convert_meshes_torch3d_to_o3d
 
 
 
@@ -52,9 +51,35 @@ UNITIZED_LENGTH = UNITIZED_LENGTH
 
 @ debug_separator
 class PeakFootDataset(Dataset):
-    """
-    """
+    """---
+    PeakFootDataset
+    
+    dataset of feet scaned by Peak    
+    """    
     def __init__(self, dir_root: Union[str, Path], suffix=".ply", flag_side_foot: SIDE_OF_FOOT=SIDE_OF_FOOT.RIGHT, flag_unitized_length: UNITIZED_LENGTH=UNITIZED_LENGTH.MM, device: str="cuda:0"):
+        """---
+        ## __init__ 
+        
+        initialize dataset
+        
+        Parameters
+        ----------
+        ### - `dir_root` : Union[str, Path]
+            [input directory of dataset]
+            
+        ### - `suffix` : str, optional, default=".ply"
+            [suffix of mesh file]
+            
+        ### - `flag_side_foot` : SIDE_OF_FOOT, optional, default=SIDE_OF_FOOT.RIGHT
+            [side of feet]
+            
+        ### - `flag_unitized_length` : UNITIZED_LENGTH, optional, default=UNITIZED_LENGTH.MM
+            [unitized length of feet]
+            
+        ### - `device` : str, optional, default="cuda:0"
+            [cuda device]
+            
+        """
         super().__init__()
         self.unitized_length = flag_unitized_length
         self.side_foot = "right" if (flag_side_foot == SIDE_OF_FOOT.RIGHT) else "left"
@@ -82,42 +107,13 @@ class PeakFootDataset(Dataset):
     def __getitem__(self, idx: int):
         super().__init__()
         return idx
-        # else:
-        #     raise FileExistsError("The PLY file does not exist.")
 
     def __len__(self):
         super().__init__()
         return len(self.pthes_row)
 
-    def _get_items_by_name(self, names: List[str], flag_data_type: DATA_TYPE=DATA_TYPE.RAW) -> Union[List[int], pytorch3d.structures.Meshes]:
-        pthes_mesh   = []
-        idxes_exist = []
-        for name in names:
-            dir_mesh = self.dict_dirs_data[flag_data_type]
-            pth_mesh = Path(dir_mesh, name, self.side_foot + self.suffix)
-            if pth_mesh.exists():
-                pthes_mesh.append(pth_mesh)
-                idxes_exist.append((self.sr_names[self.sr_names == name]).index[0])
-            else:
-                continue
-
-        meshes = []
-        idxes_valid = []
-        for [idx_ply, pth_mesh] in enumerate(pthes_mesh):
-            try:
-                [verts, faces] = pytorch3d.io.load_ply(pth_mesh)
-                mesh = pytorch3d.structures.Meshes([verts], [faces]).to(self.device)
-                meshes.append(mesh)
-                idxes_valid.append(int(idxes_exist[idx_ply]))
-            except :
-                continue
-        meshes = pytorch3d.structures.join_meshes_as_batch(meshes)
-        meshes = meshes.to(self.device)
-        ic(len(meshes), meshes.verts_padded().shape, meshes.faces_padded().shape)
-        return [idxes_valid, meshes]
-
     @ debug_separator
-    def _get_items(self, idxes: List[int] or torch.Tensor, flag_data_type: DATA_TYPE=DATA_TYPE.RAW) -> Union[List[int], pytorch3d.structures.Meshes]:
+    def _get_items(self, idxes: List[int] or torch.Tensor, flag_data_type: DATA_TYPE=DATA_TYPE.RAW) -> Tuple[List[int], pytorch3d.structures.Meshes]:
         pthes_mesh   = []
         idxes_exist = []
         idxes = idxes.cpu().numpy().tolist() if isinstance(idxes, torch.Tensor) else idxes
@@ -148,7 +144,34 @@ class PeakFootDataset(Dataset):
             meshes = meshes.to(self.device)
         names = self.sr_names.iloc[idxes_valid].values.tolist()
         ic(len(meshes), names, meshes.verts_padded().shape, meshes.faces_padded().shape)
-        return [idxes_valid, names, meshes]
+        return (idxes_valid, names, meshes)
+    
+    def _get_items_by_name(self, names: List[str], flag_data_type: DATA_TYPE=DATA_TYPE.RAW) -> Union[List[int], pytorch3d.structures.Meshes]:
+        pthes_mesh   = []
+        idxes_exist = []
+        for name in names:
+            dir_mesh = self.dict_dirs_data[flag_data_type]
+            pth_mesh = Path(dir_mesh, name, self.side_foot + self.suffix)
+            if pth_mesh.exists():
+                pthes_mesh.append(pth_mesh)
+                idxes_exist.append((self.sr_names[self.sr_names == name]).index[0])
+            else:
+                continue
+
+        meshes = []
+        idxes_valid = []
+        for [idx_ply, pth_mesh] in enumerate(pthes_mesh):
+            try:
+                [verts, faces] = pytorch3d.io.load_ply(pth_mesh)
+                mesh = pytorch3d.structures.Meshes([verts], [faces]).to(self.device)
+                meshes.append(mesh)
+                idxes_valid.append(int(idxes_exist[idx_ply]))
+            except :
+                continue
+        meshes = pytorch3d.structures.join_meshes_as_batch(meshes)
+        meshes = meshes.to(self.device)
+        ic(len(meshes), meshes.verts_padded().shape, meshes.faces_padded().shape)
+        return [idxes_valid, meshes]
 
     def normalize(self, meshes: pytorch3d.structures.Meshes, flag_unitized_length: UNITIZED_LENGTH, flag_data_type: DATA_TYPE=DATA_TYPE.NORMALIZED_XYZ) \
             -> Tuple[pytorch3d.structures.Meshes, pd.DataFrame]:

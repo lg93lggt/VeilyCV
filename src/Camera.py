@@ -217,7 +217,7 @@ class IdealCamera(GeometricShape.GeometricShape):
         return
 
     def set_extrinsic_by_rcvec(self, rvec=np.zeros(3), cvec=np.zeros(3)):
-        R = geometries.r_to_R(rvec)
+        R = geometries.rvec_to_Rmat(rvec)
         C = geometries.t_to_T(cvec)
         M = R @ C
         self.extrinsic.set_matrix(M)
@@ -407,7 +407,7 @@ class IdealCamera(GeometricShape.GeometricShape):
     def copy(self):
         return copy.deepcopy(self)
 
-    def resize(self, **kwargs: Tuple[Tuple[int], float]) -> None:
+    def resize(self, **kwargs: Tuple[Tuple[int], float]) -> IdealCamera:
         """---
         # resize
         change camera intrinsic according to resize image
@@ -415,7 +415,7 @@ class IdealCamera(GeometricShape.GeometricShape):
         Parameters
         -------
         ### - `size`:
-            new image size
+            new image size  
         ### - `scale`: 
             get new image size by scale, (h2, w2) = (h1, h1) * scale
             
@@ -424,26 +424,27 @@ class IdealCamera(GeometricShape.GeometricShape):
         [type]
             [description]
         """        
-        K = self.intrinsic._mat_4x4()
+        camera_new = self.copy()
+        K = camera_new.intrinsic._mat_4x4()
         if "scale" in kwargs.keys():
             scale = kwargs["scale"]
             s = 1 / scale 
-            if not (self.height % s) == 0 and (self.width % s == 0):
+            if not (camera_new.height % s) == 0 and (camera_new.width % s == 0):
                 Warning("s value is unsupported.")
                 return
             else:
-                self.height = int(self.height / s)
-                self.width  = int(self.width  / s)
-                self.size_image = (self.height, self.width)
+                camera_new.height = int(camera_new.height / s)
+                camera_new.width  = int(camera_new.width  / s)
+                camera_new.size_image = (camera_new.height, camera_new.width)
         elif "size" in kwargs.keys():
             size_new = kwargs["size"]
-            if  (self.height / size_new[0] == self.height / size_new[0]) \
-                and (self.width  % size_new[1] == 0) \
-                and (self.height % size_new[0] == 0):
-                    s = self.height / size_new[0]
-                    self.height = int(self.height / s)
-                    self.width  = int(self.width  / s)
-                    self.size_image = (self.height, self.width)
+            if  (camera_new.height / size_new[0] == camera_new.height / size_new[0]) \
+                and (camera_new.width  % size_new[1] == 0) \
+                and (camera_new.height % size_new[0] == 0):
+                    s = camera_new.height / size_new[0]
+                    camera_new.height = int(camera_new.height / s)
+                    camera_new.width  = int(camera_new.width  / s)
+                    camera_new.size_image = (camera_new.height, camera_new.width)
             else:
                 Warning("new size is unsupported.")
                 return
@@ -454,8 +455,8 @@ class IdealCamera(GeometricShape.GeometricShape):
         K[1, 2] = K[1, 2] / s - 0.5 / s + 0.5
         K[2, 2] = 1
         K[3, 3] = 1
-        self.intrinsic.set_matrix(K)
-        return self.copy()
+        camera_new.intrinsic.set_matrix(K)
+        return camera_new
 
     def get_image_from_camera_axes(self, vis):
         self.view_at_camera_axes(vis, block=False)
@@ -494,7 +495,7 @@ class IdealCamera(GeometricShape.GeometricShape):
             if ("rvec" in data_load.columns) and ("tvec" in data_load.columns):
                 rvecs = np.asarray(data_load.rvec.to_list(), dtype=float)
                 tvecs = np.asarray(data_load.tvec.to_list(), dtype=float)
-                self.trajectory = geometries.rtvecs_to_transform_matrixes(rvecs=rvecs, tvecs=tvecs)
+                self.trajectory = geometries.rtvecs_to_transform_matrices(rvecs=rvecs, tvecs=tvecs)
                 self.names_traj = data_load.index.tolist()
         return 
 

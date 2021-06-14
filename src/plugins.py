@@ -243,7 +243,7 @@ if __name__ == "__main__":
     #vis.run()
 
     """
-    Plugin to OpenCV
+    plugins to OpenCV
     """
 
     img_rgb   = vis.capture_screen_float_buffer()
