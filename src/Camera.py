@@ -1,25 +1,23 @@
 
 from pathlib import Path
 from  icecream import ic
-from numpy.core.records import array
 import pandas as pd
-from torch._C import dtype
-from src import geometries
-from src.visualizer import draw_axes3d, to_plot
 import numpy as np
 import open3d as o3d
 import cv2
 import copy
 from easydict import EasyDict
-
+import sys
+sys.path.append("../")
 try:
     import plugins
-    from geometries import *
     from CommonGeometricShapes import Cuboid
     from CommonGeometricShapes import GeometricShape
 except:
     from src import plugins
     from src.geometries import *
+    from src import geometries
+    from src.visualizer import draw_axes3d, to_plot
     from src.CommonGeometricShapes import Cuboid
     from src.CommonGeometricShapes import GeometricShape
 
@@ -160,14 +158,22 @@ class Extrinsic(object):
         [R, T] = decompose_transform_matrix_to_RTmat(self._mat_4x4())
         M2 = R.T @ np.linalg.inv(T)
         return M2
-        
+  
+def params_o3d_to_intrinsic_cv(fov_rad, height, width):
+    fx = fy = (height / 2) / np.tan(fov_rad / 2)
+    cx = width  / 2 - 0.5
+    cy = height / 2 - 0.5
+    K = np.diag([fx, fy, 1])
+    K[0, 2] = cx
+    K[1, 2] = cy
+    return K      
 
 class IdealCamera(GeometricShape.GeometricShape):
     def __init__(self, height, width, fov_degree=60):
         super().__init__()
 
         self.fov_rad = fov_degree/180*np.pi
-        K = plugins.params_o3d_to_intrinsic_cv(
+        K = params_o3d_to_intrinsic_cv(
             self.fov_rad, width=width, height=height)
 
         self.height = height

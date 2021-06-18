@@ -29,7 +29,7 @@ import multiprocessing
 os.environ["NUMEXPR_MAX_THREADS"] = "8"
 sys.path.append("../..")
 from src.utils.debug import debug_separator, debug_vis
-from src.plugin.geometry3d import cvt_meshes_o3d_to_torch3d, cvt_meshes_torch3d_to_o3d
+from src.plugins.geometry3d import cvt_meshes_o3d_to_torch3d, cvt_meshes_torch3d_to_o3d
 
 
 
